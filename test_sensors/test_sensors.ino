@@ -100,7 +100,7 @@ void loop() {
           printFlag = false;
           break;
         case 3:
-          Serial.println("All testing complete!");
+          Serial.println("\nAll testing complete!");
           while (1);
           // possibly add a command to re-do testing, or to test a particular component again (e.g. type IMU, mic, cam to test again)?
           break;
