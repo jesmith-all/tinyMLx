@@ -13,11 +13,17 @@
 int testIndex = 0; // 0 - IMU, 1 - microphone, 2 - camera
 int imuIndex = 0; // 0 - accelerometer, 1 - gyroscope, 2 - magnetometer
 bool commandRecv = false; // flag used for indicating receipt of commands from serial port
-bool printFlag = false; // flag as true to continually print sensor data
+bool printFlag = false; // flag as true to print sensor data
+bool liveFlag = false; // flag as true to live stream raw camera bytes, set as false to take single images on command
+bool captureFlag = false;
 
 // PDM buffer
 short sampleBuffer[256];
 volatile int samplesRead;
+
+// Image buffer;
+byte image[176 * 144 * 2]; // QCIF: 176x144 x 2 bytes per pixel (RGB565)
+int bytesPerFrame;
 
 void setup() {
   Serial.begin(9600);
@@ -31,10 +37,11 @@ void setup() {
 
   // Initialize camera
   // TODO: decide on final camera format
-  if (!Camera.begin(QCIF, GRAYSCALE, 1)) {
+  if (!Camera.begin(QCIF, RGB565, 1)) {
     Serial.println("Failed to initialize camera");
     while (1);
   }
+  bytesPerFrame = Camera.width() * Camera.height() * Camera.bytesPerPixel();
 
   PDM.onReceive(onPDMdata);
   // Initialize PDM microphone in mono mode with 16 kHz sample rate
@@ -86,6 +93,11 @@ void loop() {
           //          2. stream data to serial monitor using a command in hex, copy and paste to Python (in a Colab?) to render an image 
           Serial.println("\nMicrophone testing completed!\n");
           Serial.println("Next test: OV7675 camera"); 
+          Serial.println("\nAvailable commands:");
+          Serial.println("Live - the raw bytes of images will be streamed live over the serial port");
+          Serial.println("Single - take a single image and print out the hexadecimal for each pixel (default)");
+          Serial.println("Capture - when in single image mode, initiates an image capture");
+          printFlag = false;
           break;
         case 3:
           Serial.println("All testing complete!");
@@ -125,6 +137,36 @@ void loop() {
         Serial.println("\nMicrophone data will begin streaming in 3 seconds...");
         printFlag = true;
         delay(3000);
+      }
+    }
+    else if (command == "live") {
+      if (testIndex == 2) {
+        Serial.println("\nRaw image data will begin streaming in 5 seconds...");
+        printFlag = true;
+        liveFlag = true;
+        delay(5000);
+      }
+    }
+    else if (command == "single") {
+      if (testIndex == 2) {
+        Serial.println("\nCamera in single mode, type \"capture\" to initiate an image capture");
+        printFlag = true;
+        liveFlag = false;
+        delay(200);
+      }
+    }
+    else if (command == "capture") {
+      if (testIndex == 2) {
+        if (!liveFlag) {
+          Serial.println("\nImage data will be printed out in 3 seconds...");
+          printFlag = true;
+          captureFlag = true;
+          delay(3000);
+        }
+        else {
+          Serial.println("\nCamera is not in single mode, type \"single\" first");
+          delay(1000);
+        }
       }
     }
   }
@@ -192,6 +234,27 @@ void loop() {
 
         // clear read count
         samplesRead = 0;
+      }
+    }
+  }
+  else if (testIndex == 2) { // testing camera
+    Camera.readFrame(image);
+    if (printFlag) {
+      if (liveFlag) {
+        Serial.write(image, bytesPerFrame);
+        delay(1000);
+      }
+      else {
+        if (captureFlag) {
+          captureFlag = false;
+          Serial.print("0x");
+          Serial.print(image[0], HEX);
+          for (int i = 1; i < bytesPerFrame; i++) {
+            Serial.print(", 0x");
+            Serial.print(image[i], HEX);
+          }
+          Serial.println();
+        }
       }
     }
   }
