@@ -75,16 +75,17 @@ void loop() {
         case 1: // just completed IMU test, moving onto microphone
           Serial.println("\nIMU testing completed!\n");
           Serial.println("Next test: built-in microphone");
-          Serial.println("Raw data from the microphone will begin streaming in 5 seconds");
           Serial.println("Close the serial monitor, and open the serial plotter to view the raw waveform");
           Serial.println("When finished testing, re-open the serial monitor and send the \"done\" command");
-          printFlag = true;
-          delay(5000);
+          Serial.println("\nType \"Start\" to begin streaming data from the microphone");
+          printFlag = false;
           break;
         case 2: // just completed the microphone test, moving onto camera
           // Still figuring out exactly how we're going to handle this
           // Options: 1. stream data raw to processing after a short delay, similar to mic test
-          //          2. stream data to serial monitor using a command in hex, copy and paste to Python (in a Colab?) to render an image  
+          //          2. stream data to serial monitor using a command in hex, copy and paste to Python (in a Colab?) to render an image 
+          Serial.println("\nMicrophone testing completed!\n");
+          Serial.println("Next test: OV7675 camera"); 
           break;
         case 3:
           Serial.println("All testing complete!");
@@ -115,6 +116,14 @@ void loop() {
       if (testIndex == 0) {
         imuIndex = 2;
         Serial.println("\nMagnetometer data will begin streaming in 3 seconds...");
+        printFlag = true;
+        delay(3000);
+      }
+    }
+    else if (command == "start") {
+      if (testIndex == 1) {
+        Serial.println("\nMicrophone data will begin streaming in 3 seconds...");
+        printFlag = true;
         delay(3000);
       }
     }
@@ -130,12 +139,13 @@ void loop() {
 
           Serial.print("Ax: ");
           Serial.print(x);
-          Serial.print('\t');
+          Serial.print(" g  ");
           Serial.print("Ay: ");
           Serial.print(y);
-          Serial.print('\t');
+          Serial.print(" g  ");
           Serial.print("Az: ");
-          Serial.println(z);
+          Serial.print(z);
+          Serial.println(" g");
         }
       }
       else if (imuIndex == 1) { // testing gyroscope
@@ -144,12 +154,13 @@ void loop() {
 
           Serial.print("wx: ");
           Serial.print(x);
-          Serial.print('\t');
+          Serial.print(" deg/s  ");
           Serial.print("wy: ");
           Serial.print(y);
-          Serial.print('\t');
+          Serial.print(" deg/s  ");
           Serial.print("wz: ");
-          Serial.println(z);
+          Serial.print(z);
+          Serial.println(" deg/s");
         }
       }
       else if (imuIndex == 2) { // testing magnetometer
@@ -158,12 +169,13 @@ void loop() {
 
           Serial.print("Bx: ");
           Serial.print(x);
-          Serial.print('\t');
+          Serial.print(" uT  ");
           Serial.print("By: ");
           Serial.print(y);
-          Serial.print('\t');
+          Serial.print(" uT  ");
           Serial.print("Bz: ");
-          Serial.println(z);
+          Serial.print(z);
+          Serial.println(" uT");
         }
       }
     }
