@@ -238,20 +238,23 @@ void loop() {
     }
   }
   else if (testIndex == 2) { // testing camera
-    Camera.readFrame(image);
     if (printFlag) {
       if (liveFlag) {
+        Camera.readFrame(image);
         Serial.write(image, bytesPerFrame);
-        delay(1000);
       }
       else {
         if (captureFlag) {
           captureFlag = false;
-          Serial.print("0x");
-          Serial.print(image[0], HEX);
-          for (int i = 1; i < bytesPerFrame; i++) {
-            Serial.print(", 0x");
+          Camera.readFrame(image);
+          delay(3000);
+          for (int i = 0; i < bytesPerFrame - 1; i += 2) {
+            Serial.print("0x");
+            Serial.print(image[i+1], HEX);
             Serial.print(image[i], HEX);
+            if (i != bytesPerFrame - 2) {
+              Serial.print(", ");
+            }
           }
           Serial.println();
         }
